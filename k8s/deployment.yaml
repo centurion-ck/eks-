@@ -16,11 +16,9 @@ spec:
         app: python-demo
 
     spec:
-      containers:
+        containers:
       - name: python-demo
-
         image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
-
         ports:
         - containerPort: 5000
 
