@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: python-demo
-  labels:
-    app: python-demo
 
 spec:
   replicas: 2
@@ -21,9 +19,7 @@ spec:
       containers:
       - name: python-demo
 
-        image: REPLACE_IMAGE
-
-        imagePullPolicy: Always
+        image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
 
         ports:
         - containerPort: 5000
@@ -32,6 +28,7 @@ spec:
           requests:
             cpu: "100m"
             memory: "128Mi"
+
           limits:
             cpu: "500m"
             memory: "512Mi"
