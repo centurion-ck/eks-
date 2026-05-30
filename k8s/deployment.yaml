@@ -1,5 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: python-demo
 
@@ -16,17 +17,9 @@ spec:
         app: python-demo
 
     spec:
-        containers:
-      - name: python-demo
-        image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
-        ports:
-        - containerPort: 5000
+      containers:
+        - name: python-demo
+          image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
 
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
+          ports:
+            - containerPort: 5000
