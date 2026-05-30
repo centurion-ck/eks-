@@ -1,0 +1,143 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "python-demo"
+
+        AWS_REGION = "ap-southeast-1"
+        AWS_ACCOUNT_ID = "093435167670"
+
+        ECR_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/python-demo"
+
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
+        SONAR_HOST_URL = "http://18.141.176.2/:9000"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    python3 -m pip install --upgrade pip
+                    pip3 install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Unit Test') {
+            steps {
+                sh '''
+                    pytest tests/
+                '''
+            }
+        }
+
+        stage('SonarQube Scan') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=python-demo \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.version=3
+                    '''
+                }
+            }
+        }
+
+        stage('OWASP Dependency Check') {
+            steps {
+                dependencyCheck additionalArguments: '--scan .',
+                odcInstallation: 'OWASP-DC'
+            }
+        }
+
+        stage('Trivy File System Scan') {
+            steps {
+                sh '''
+                    trivy fs . --severity HIGH,CRITICAL
+                '''
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                    docker build -t ${APP_NAME}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    trivy image ${APP_NAME}:${IMAGE_TAG} \
+                    --severity HIGH,CRITICAL
+                '''
+            }
+        }
+
+        stage('Login ECR') {
+            steps {
+                sh '''
+                    aws ecr get-login-password \
+                    --region ${AWS_REGION} \
+                    | docker login \
+                    --username AWS \
+                    --password-stdin \
+                    ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                '''
+            }
+        }
+
+        stage('Push ECR') {
+            steps {
+                sh '''
+                    docker tag \
+                    ${APP_NAME}:${IMAGE_TAG} \
+                    ${ECR_REPO}:${IMAGE_TAG}
+
+                    docker push ${ECR_REPO}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Update Manifest') {
+            steps {
+                sh '''
+                    sed -i "s|IMAGE_TAG|${IMAGE_TAG}|g" k8s/deployment.yaml
+                '''
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh '''
+                    kubectl apply -f k8s/
+                    kubectl rollout status deployment/python-demo
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+
+        success {
+            echo 'Deployment Successful'
+        }
+
+        failure {
+            echo 'Pipeline Failed'
+        }
+    }
+}

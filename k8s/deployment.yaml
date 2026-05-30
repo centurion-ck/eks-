@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-demo
+  labels:
+    app: python-demo
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: python-demo
+
+  template:
+    metadata:
+      labels:
+        app: python-demo
+
+    spec:
+      containers:
+      - name: python-demo
+
+        image: REPLACE_IMAGE
+
+        imagePullPolicy: Always
+
+        ports:
+        - containerPort: 5000
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
