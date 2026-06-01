@@ -4,7 +4,7 @@ pipeline {
 
     environment {
 
-        APP_NAME       = "search-service"
+        APP_NAME       = "checkout-service"
         AWS_REGION     = "ap-southeast-1"
         AWS_ACCOUNT_ID = "093435167670"
 
@@ -145,7 +145,7 @@ pipeline {
                 sh '''
                 sed -i \
                 "s|IMAGE_TAG|${IMAGE_TAG}|g" \
-                k8s/deployment.yaml
+                payment-service/deployment.yaml
                 '''
             }
         }
@@ -167,7 +167,7 @@ pipeline {
             steps {
 
                 sh '''
-                kubectl apply -f k8s/
+                kubectl apply -f checkout-service/
 
                 kubectl rollout status deployment/${APP_NAME}
                 '''

@@ -1,0 +1,207 @@
+pipeline {
+
+    agent any
+
+    environment {
+
+        APP_NAME       = "service-service"
+        AWS_REGION     = "ap-southeast-1"
+        AWS_ACCOUNT_ID = "093435167670"
+
+        ECR_REPO       = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${APP_NAME}"
+
+        IMAGE_TAG      = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+
+            steps {
+
+                git branch: 'master',
+                url: 'https://github.com/centurion-ck/search-service.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+
+            steps {
+
+                sh '''
+                python3 -m venv venv
+
+                venv/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Unit Test') {
+
+            steps {
+
+                sh '''
+                if [ -d tests ]; then
+
+                    venv/bin/python -m pytest tests/
+
+                else
+
+                    echo "No tests found"
+
+                fi
+                '''
+            }
+        }
+
+        stage('SonarQube Scan') {
+
+            steps {
+
+                script {
+
+                    def scannerHome = tool 'sonar-scan'
+
+                    withSonarQubeEnv('sonar-scann') {
+
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                        -Dsonar.projectKey=${APP_NAME} \
+                        -Dsonar.projectName=${APP_NAME} \
+                        -Dsonar.sources=.
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Trivy FS Scan') {
+
+            steps {
+
+                sh '''
+                trivy fs . \
+                --severity HIGH,CRITICAL
+                '''
+            }
+        }
+
+        stage('Docker Build') {
+
+            steps {
+
+                sh '''
+                docker build \
+                -t ${APP_NAME}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Trivy Image Scan') {
+
+            steps {
+
+                sh '''
+                trivy image \
+                ${APP_NAME}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('ECR Login') {
+
+            steps {
+
+                sh '''
+                aws ecr get-login-password \
+                --region ${AWS_REGION} | \
+                docker login \
+                --username AWS \
+                --password-stdin \
+                ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                '''
+            }
+        }
+
+        stage('Push Image') {
+
+            steps {
+
+                sh '''
+                docker tag \
+                ${APP_NAME}:${IMAGE_TAG} \
+                ${ECR_REPO}:${IMAGE_TAG}
+
+                docker push \
+                ${ECR_REPO}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Update Manifest') {
+
+            steps {
+
+                sh '''
+                sed -i \
+                "s|IMAGE_TAG|${IMAGE_TAG}|g" \
+                search-service/deployment.yaml
+                '''
+            }
+        }
+
+        stage('Connect To EKS') {
+
+            steps {
+
+                sh '''
+                aws eks update-kubeconfig \
+                --region ${AWS_REGION} \
+                --name shopeasy-cluster
+                '''
+            }
+        }
+
+        stage('Deploy To EKS') {
+
+            steps {
+
+                sh '''
+                kubectl apply -f payment-service/
+
+                kubectl rollout status deployment/${APP_NAME}
+                '''
+            }
+        }
+
+        stage('Verify') {
+
+            steps {
+
+                sh '''
+                kubectl get pods
+
+                kubectl get svc
+                '''
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo "SUCCESS"
+        }
+
+        failure {
+
+            echo "FAILED"
+        }
+
+        always {
+
+            cleanWs()
+        }
+    }
+}
