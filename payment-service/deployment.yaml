@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 
 metadata:
-  name: python-demo
+  name: payment-service
 
 spec:
   replicas: 2
@@ -18,8 +18,7 @@ spec:
 
     spec:
       containers:
-        - name: payment-service
-          image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
-
-          ports:
-            - containerPort: 5000
+      - name: payment-service
+        image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/payment-service:IMAGE_TAG
+        ports:
+        - containerPort: 5000
