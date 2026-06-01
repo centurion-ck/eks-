@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: checkout-service
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: checkout-service
+
+  template:
+    metadata:
+      labels:
+        app: checkout-service
+
+    spec:
+      containers:
+      - name: checkout-service
+
+        image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/checkout-service:IMAGE_TAG
+
+        ports:
+        - containerPort: 5000

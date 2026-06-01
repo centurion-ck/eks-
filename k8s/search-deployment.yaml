@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: search-service
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: search-service
+
+  template:
+    metadata:
+      labels:
+        app: search-service
+
+    spec:
+      containers:
+      - name: search-service
+
+        image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/search-service:IMAGE_TAG
+
+        ports:
+        - containerPort: 5000

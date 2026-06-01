@@ -1,15 +1,42 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify
 
-app = Flask(__name__, static_folder="static")
+app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return send_from_directory("static", "index.html")
+    return """
+    <html>
+    <head>
+        <title>Telecom Payment Service</title>
+    </head>
+    <body>
+        <h1>Payment Service Running on AWS EKS</h1>
 
-@app.route("/api")
-def api():
+        <h2>MuleSoft to Kong Migration Demo</h2>
+
+        <p>Available APIs:</p>
+
+        <ul>
+            <li>/payment</li>
+            <li>/health</li>
+        </ul>
+
+    </body>
+    </html>
+    """
+
+@app.route("/payment")
+def payment():
     return jsonify({
-        "message": "Hello from Python backend running on EKS!"
+        "status": "SUCCESS",
+        "service": "payment-service",
+        "message": "Payment Processed Successfully"
+    })
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status": "UP"
     })
 
 if __name__ == "__main__":
