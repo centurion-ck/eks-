@@ -20,7 +20,7 @@ pipeline {
             steps {
 
                 git branch: 'master',
-                url: 'https://github.com/centurion-ck/search-service.git'
+                url: 'https://github.com/centurion-ck/eks-.git'
             }
         }
 
@@ -86,17 +86,16 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-
-            steps {
-
-                sh '''
-                docker build \
-                -t ${APP_NAME}:${IMAGE_TAG} .
-                '''
-            }
+stage('Docker Build') {
+    steps {
+        dir('payment-service') {
+            sh '''
+            docker build \
+            -t ${APP_NAME}:${IMAGE_TAG} .
+            '''
         }
-
+    }
+}
         stage('Trivy Image Scan') {
 
             steps {
@@ -161,18 +160,20 @@ pipeline {
                 '''
             }
         }
+    
+stage('Deploy To EKS') {
 
-        stage('Deploy To EKS') {
+    steps {
 
-            steps {
+        sh '''
+        kubectl apply -f payment-service/deployment.yaml
 
-                sh '''
-                kubectl apply -f payment-service/
+        kubectl apply -f payment-service/service.yaml
 
-                kubectl rollout status deployment/${APP_NAME}
-                '''
-            }
-        }
+        kubectl rollout status deployment/${APP_NAME}
+        '''
+    }
+}
 
         stage('Verify') {
 
