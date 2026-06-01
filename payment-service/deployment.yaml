@@ -9,16 +9,16 @@ spec:
 
   selector:
     matchLabels:
-      app: python-demo
+      app: payment-service
 
   template:
     metadata:
       labels:
-        app: python-demo
+        app: payment-service
 
     spec:
       containers:
-        - name: python-demo
+        - name: payment-service
           image: 093435167670.dkr.ecr.ap-southeast-1.amazonaws.com/python-demo:IMAGE_TAG
 
           ports:

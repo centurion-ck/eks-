@@ -5,7 +5,7 @@ metadata:
 
 spec:
   selector:
-    app: python-demo
+    app: payment-service
 
   ports:
   - protocol: TCP
